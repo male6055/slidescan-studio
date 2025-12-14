@@ -7,15 +7,15 @@ import {
   ZoomOut,
   Home,
   RotateCw,
-  Maximize, // Icon for Sidebar
-  Minimize, // Icon for exiting fullscreen
+  Maximize, 
+  Minimize, 
   Download,
   ArrowLeft,
   Grid3X3,
   X,
   RefreshCcw,
   Move,
-  Expand,   // Icon for the maximize button
+  Expand,   
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import tissueSample from "@/assets/Final_Stitched_WSI.jpg";
@@ -50,7 +50,7 @@ const Viewer = () => {
 
   // --- NEW: FULLSCREEN PATCH STATE ---
   const [isPatchFullscreen, setIsPatchFullscreen] = useState(false);
-  const [fullPatchZoom, setFullPatchZoom] = useState([100]); // Zoom for the fullscreen mode
+  const [fullPatchZoom, setFullPatchZoom] = useState([100]); 
 
   const GRID_ROWS = 4;
   const GRID_COLS = 4;
@@ -108,7 +108,7 @@ const Viewer = () => {
   // --- FULLSCREEN HANDLERS ---
   const togglePatchFullscreen = () => {
     setIsPatchFullscreen(!isPatchFullscreen);
-    setRotation(0); // Reset rotation when switching views for sanity
+    setRotation(0); 
   };
 
   return (
@@ -244,7 +244,6 @@ const Viewer = () => {
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="font-semibold text-primary">Selected Region</h3>
                   <div className="flex gap-1">
-                    {/* NEW BUTTON: MAXIMIZE */}
                     <Button 
                         variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/20" 
                         onClick={togglePatchFullscreen}
@@ -266,15 +265,30 @@ const Viewer = () => {
                     </div>
                   ) : (
                     <>
+                      {/* === UPDATED CODE FOR MINI-VIEW PAN === */}
                       <motion.img
                         src={selectedPatch.url}
                         alt="High Res Patch"
-                        className="w-full h-full object-cover cursor-move"
-                        drag
-                        dragConstraints={patchContainerRef}
+                        className={`w-full h-full object-cover transition-colors ${patchZoom > 1 ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+                        
+                        // 1. ENABLE DRAG ONLY WHEN ZOOMED IN
+                        drag={patchZoom > 1}
+                        
+                        // 2. DYNAMIC CONSTRAINTS
+                        // Allows panning proportional to how much we are zoomed in
+                        dragConstraints={{
+                          left: -150 * (patchZoom - 1),
+                          right: 150 * (patchZoom - 1),
+                          top: -150 * (patchZoom - 1),
+                          bottom: 150 * (patchZoom - 1),
+                        }}
+                        
+                        dragElastic={0.2}
                         animate={{ scale: patchZoom }}
+                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         onError={(e) => { e.currentTarget.src = "https://placehold.co/400x400?text=No+Data"; }}
                       />
+
                       {/* Sidebar HUD Controls */}
                       <div className="absolute bottom-2 right-2 flex gap-1 bg-black/50 backdrop-blur-md p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20" onClick={handlePatchZoomOut}>
@@ -287,13 +301,20 @@ const Viewer = () => {
                           <RefreshCcw className="w-3 h-3" />
                         </Button>
                       </div>
+
+                      {/* Visual Hint for Panning (Only when zoomed) */}
+                      {patchZoom > 1 && (
+                         <div className="absolute top-2 left-2 pointer-events-none opacity-50 bg-black/50 p-1 rounded">
+                            <Move className="w-3 h-3 text-white" />
+                         </div>
+                      )}
                     </>
                   )}
                 </div>
               </motion.div>
             )}
 
-            {/* UNIFIED CONTROLS (Works for both modes) */}
+            {/* UNIFIED CONTROLS */}
             <div className="bg-card border border-border rounded-2xl p-6 shadow-card">
               <h3 className="font-semibold mb-4">
                 {isPatchFullscreen ? "Patch Controls" : "Slide Controls"}
