@@ -95,13 +95,13 @@ const Hero = () => {
                 Explore Scanner
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button
+              {/*<Button
                 size="lg"
                 variant="outline"
                 className="border-primary/30 hover:bg-primary/5 hover:border-primary transition-all duration-300"
               >
                 Learn More
-              </Button>
+              </Button>*/}
             </motion.div>
 
             {/* Stats */}
@@ -114,7 +114,7 @@ const Hero = () => {
               {[
                 { value: "40x", label: "Magnification" },
                 { value: "0.25µm", label: "Resolution" },
-                { value: "<60s", label: "Scan Time" },
+                { value: "<300s", label: "Scan Time" },
               ].map((stat, index) => (
                 <div key={index} className="text-center lg:text-left">
                   <div className="text-3xl font-bold text-primary">
@@ -172,14 +172,14 @@ const Hero = () => {
             </div>
 
             {/* Floating cards */}
-            <motion.div
+            {/*<motion.div
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 4, repeat: Infinity }}
               className="absolute -top-6 -right-6 bg-card border border-border rounded-2xl p-4 shadow-card backdrop-blur-sm"
             >
               <div className="text-2xl font-bold text-primary">100K+</div>
               <div className="text-xs text-muted-foreground">Scans Daily</div>
-            </motion.div>
+            </motion.div>*/}
 
             <motion.div
               animate={{ y: [0, 10, 0] }}

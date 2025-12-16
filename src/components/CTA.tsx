@@ -97,13 +97,13 @@ const CTA = () => {
               Try Interactive Demo
               <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
-            <Button
+            {/*<Button
               size="lg"
               variant="outline"
               className="border-primary/30 hover:bg-primary/5 hover:border-primary transition-all duration-300"
             >
               Schedule Consultation
-            </Button>
+            </Button>*/}
           </motion.div>
 
           {/* Contact cards */}
@@ -126,10 +126,10 @@ const CTA = () => {
                 Get detailed information about our solutions
               </p>
               <a
-                href="mailto:info@scanvision.com"
+                href="mailto:muhammadali6055@gmail.com"
                 className="text-primary hover:text-primary-dark font-medium text-sm transition-colors"
               >
-                info@scanvision.com
+                muhammadali6055@gmail.com
               </a>
             </motion.div>
 
@@ -145,10 +145,10 @@ const CTA = () => {
                 Speak with our product specialists
               </p>
               <a
-                href="tel:+18005551234"
+                href="tel:+923336055774"
                 className="text-primary hover:text-primary-dark font-medium text-sm transition-colors"
               >
-                +1 (800) 555-1234
+                +92 333-6055774
               </a>
             </motion.div>
           </motion.div>

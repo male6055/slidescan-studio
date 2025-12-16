@@ -1,27 +1,27 @@
 import { motion } from "framer-motion";
-import { Zap, Target, Shield, Workflow } from "lucide-react";
+import { Scan, ZoomIn, Puzzle, Brain } from "lucide-react";
 
 const Technology = () => {
   const features = [
     {
-      icon: Zap,
-      title: "Ultra-Fast Scanning",
-      description: "Capture entire slides in under 60 seconds with our proprietary rapid scanning technology.",
+      icon: Scan,
+      title: "Automated Slide Scanning",
+      description: "Automated scanning of blood smear slides using motorized stage movement and controlled image acquisition for complete slide coverage.",
     },
     {
-      icon: Target,
-      title: "Precision Optics",
-      description: "Sub-micrometer resolution ensures every cellular detail is captured with absolute clarity.",
+      icon: ZoomIn,
+      title: "High-Resolution Imaging",
+      description: "High-magnification microscopic imaging designed to capture fine cellular details required for white blood cell analysis.",
     },
     {
-      icon: Shield,
-      title: "AI-Powered Quality",
-      description: "Real-time quality assessment ensures consistent, diagnostic-grade images every time.",
+      icon: Puzzle,
+      title: "Image Stitching",
+      description: "Robust whole-slide reconstruction using ORB feature detection and matching with overlap-based alignment for seamless image stitching.",
     },
     {
-      icon: Workflow,
-      title: "Seamless Workflow",
-      description: "Integrate effortlessly with existing lab systems and PACS infrastructure.",
+      icon: Brain,
+      title: "Image Enhancement",
+      description: "AI-assisted enhancement using GANs to reduce blur and illumination defects, improving image quality for downstream analysis.",
     },
   ];
 
@@ -88,17 +88,14 @@ const Technology = () => {
                 The Science Behind the Scan
               </h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                Our proprietary multi-focal imaging technology captures multiple
-                focal planes simultaneously, ensuring optimal focus across the
-                entire tissue sample. Combined with advanced image processing
-                algorithms, we deliver crisp, artifact-free digital slides.
+                Our system combines controlled mechanical motion, high-magnification microscopy, and feature-based image processing to digitally reconstruct whole blood smear slides. By carefully managing image overlap and alignment, the platform enables detailed visualization suitable for white blood cell analysis.
               </p>
               <div className="space-y-3">
                 {[
                   "40x optical magnification with digital zoom up to 400x",
                   "0.25 µm/pixel resolution for diagnostic precision",
-                  "Automated tissue detection and focus optimization",
-                  "HDR imaging for enhanced dynamic range",
+                  "Overlap-aware image acquisition for reliable ORB-based stitching",
+                  "AI-assisted image enhancement to mitigate blur and illumination defects",
                 ].map((item, index) => (
                   <div key={index} className="flex items-start gap-3">
                     <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />

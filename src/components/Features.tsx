@@ -6,29 +6,29 @@ const Features = () => {
   const features = [
     {
       icon: Clock,
-      title: "Rapid Throughput",
-      description: "Process up to 500 slides per day with automated batch scanning and intelligent slide management.",
-      stat: "500",
-      unit: "slides/day",
+      title: "Precision Automation",
+      description: "Automates stage movement via stepper motors and timing belts, achieving ~0.00325 mm resolution for high-precision scanning.",
+      stat: "~3.25",
+      unit: "μm",
     },
     {
       icon: Database,
-      title: "Smart Storage",
-      description: "Efficient image compression maintains diagnostic quality while reducing storage costs by 70%.",
+      title: "Intelligent Defect Mitigation",
+      description: "Deploys Generative Adversarial Networks (GANs) to automatically restore image quality by correcting blur and lighting inconsistencies.",
       stat: "70%",
       unit: "saved",
     },
     {
       icon: Cloud,
-      title: "Cloud Integration",
-      description: "Instant access to slides from anywhere. Seamless collaboration across departments and locations.",
+      title: "Eco-Friendly Digital Staining",
+      description: "Virtually stains tissue samples using deep learning, eliminating hazardous chemicals and saving up to 5000L of water annually.",
       stat: "24/7",
       unit: "access",
     },
     {
       icon: Lock,
-      title: "HIPAA Compliant",
-      description: "Enterprise-grade security with encrypted storage, audit trails, and role-based access control.",
+      title: "Universal Retrofit Design",
+      description: "Upgrades standard optical microscopes by modifying control knobs with 3D-printed gears, offering a low-cost alternative to commercial scanners.",
       stat: "100%",
       unit: "secure",
     },
@@ -117,9 +117,7 @@ const Features = () => {
             </h2>
             
             <p className="text-lg text-muted-foreground mb-8">
-              From high-volume laboratories to research institutions, our
-              platform adapts to your workflow with intelligent automation and
-              enterprise-grade reliability.
+              From automating standard microscopes to applying deep learning for defect correction, our platform modernizes blood cell analysis with accessible hardware and advanced AI.
             </p>
 
             <div className="space-y-6">
