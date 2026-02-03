@@ -41,12 +41,14 @@ const Viewer = () => {
   const [zoom, setZoom] = useState([100]);
   const [rotation, setRotation] = useState(0);
   const [showGrid, setShowGrid] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
 
   // --- PATCH SIDEBAR STATE ---
   const [selectedPatch, setSelectedPatch] = useState(null);
   const [isLoadingPatch, setIsLoadingPatch] = useState(false);
   const [patchZoom, setPatchZoom] = useState(1);
   const patchContainerRef = useRef(null);
+  const [sidebarKey, setSidebarKey] = useState(0);
 
   // --- NEW: FULLSCREEN PATCH STATE ---
   const [isPatchFullscreen, setIsPatchFullscreen] = useState(false);
@@ -77,6 +79,8 @@ const Viewer = () => {
   const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
   
   const handleReset = () => {
+    setResetKey((prev) => prev + 1); // handles reset
+
     if (isPatchFullscreen) {
       setFullPatchZoom([100]);
       setRotation(0);
@@ -103,7 +107,8 @@ const Viewer = () => {
   // --- SIDEBAR PATCH HANDLERS ---
   const handlePatchZoomIn = (e) => { e.stopPropagation(); setPatchZoom((p) => Math.min(p + 0.5, 5)); };
   const handlePatchZoomOut = (e) => { e.stopPropagation(); setPatchZoom((p) => Math.max(p - 0.5, 1)); };
-  const handlePatchReset = (e) => { e.stopPropagation(); setPatchZoom(1); };
+  const handlePatchReset = (e) => { e.stopPropagation(); setPatchZoom(1);
+                                    setSidebarKey(prev => prev + 1);};
 
   // --- FULLSCREEN HANDLERS ---
   const togglePatchFullscreen = () => {
@@ -157,6 +162,7 @@ const Viewer = () => {
                 </div>
 
                 <motion.div
+                  key={`patch-${resetKey}`}
                   animate={{ scale: fullPatchZoom[0] / 100, rotate: rotation }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   className="relative shadow-2xl cursor-grab active:cursor-grabbing"
@@ -181,6 +187,7 @@ const Viewer = () => {
               /* VIEW MODE 2: THE WHOLE SLIDE (Standard) */
               <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
                 <motion.div
+                  key={`slide-${resetKey}`}
                   animate={{ scale: zoom[0] / 100, rotate: rotation }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   className="relative shadow-2xl"
@@ -267,6 +274,7 @@ const Viewer = () => {
                     <>
                       {/* === UPDATED CODE FOR MINI-VIEW PAN === */}
                       <motion.img
+                        key={sidebarKey}
                         src={selectedPatch.url}
                         alt="High Res Patch"
                         className={`w-full h-full object-cover transition-colors ${patchZoom > 1 ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
