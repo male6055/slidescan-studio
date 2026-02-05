@@ -227,7 +227,7 @@ const Viewer = () => {
                   animate={{ scale: fullPatchZoom[0] / 100, rotate: rotation }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   className="relative shadow-2xl cursor-grab active:cursor-grabbing"
-                  drag
+                  drag={fullPatchZoom[0] > 100}
                   dragElastic={0.1}
                 >
                   <img
@@ -252,7 +252,7 @@ const Viewer = () => {
                   animate={{ scale: zoom[0] / 100, rotate: rotation }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   className="relative shadow-2xl"
-                  drag
+                  drag={zoom[0] !== 100}
                   dragConstraints={{ left: -500, right: 500, top: -500, bottom: 500 }}
                   dragElastic={0.1}
                 >
@@ -330,7 +330,7 @@ const Viewer = () => {
                 <div 
                     ref={patchContainerRef} 
                     className="aspect-square bg-black/10 rounded-lg overflow-hidden relative group"
-                    //onWheel={handleMiniPatchWheel}
+                    onWheel={handleMiniPatchWheel}
                 >
                   {isLoadingPatch ? (
                     <div className="flex items-center justify-center w-full h-full">
