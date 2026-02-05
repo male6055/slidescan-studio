@@ -48,6 +48,7 @@ const Viewer = () => {
   const [isLoadingPatch, setIsLoadingPatch] = useState(false);
   const [patchZoom, setPatchZoom] = useState(1);
   const patchContainerRef = useRef(null);
+  const viewerRef = useRef(null);
   const [sidebarKey, setSidebarKey] = useState(0);
 
   // --- NEW: FULLSCREEN PATCH STATE ---
@@ -64,6 +65,31 @@ const Viewer = () => {
       setFullPatchZoom([100]); // Reset fullscreen zoom when patch changes
     }
   }, [selectedPatch]);
+
+
+  // Add this inside your component (before return)
+  useEffect(() => {
+    const container = patchContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e) => {
+      e.preventDefault(); // This is guaranteed to work here
+      e.stopPropagation();
+      
+      const direction = e.deltaY < 0 ? 1 : -1;
+      const step = 0.2;
+      setPatchZoom((current) => Math.min(Math.max(current + (direction * step), 1), 5));
+    };
+
+    // { passive: false } is the key to allowing preventDefault
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [patchContainerRef, selectedPatch]); // Re-run if patch changes
+
+
 
   // --- HANDLERS ---
   const handleZoomIn = () => {
@@ -104,11 +130,44 @@ const Viewer = () => {
     }
   };
 
-  // --- SIDEBAR PATCH HANDLERS ---
+  // --- NEW: SCROLL/WHEEL HANDLERS ---
+  
+  // 1. Handle Scroll for Main Viewer (Slide & Fullscreen Patch)
+  const handleViewerWheel = (e) => {
+    e.preventDefault(); // <--- STOPS PAGE SCROLL
+    
+    // Determine direction: negative deltaY is scrolling UP (Zoom In)
+    const direction = e.deltaY < 0 ? 1 : -1;
+    const step = 5; // 5% increment for smoother scroll than buttons
+
+    if (isPatchFullscreen) {
+      setFullPatchZoom(([current]) => [
+        Math.min(Math.max(current + (direction * step), 25), 500)
+      ]);
+    } else {
+      setZoom(([current]) => [
+        Math.min(Math.max(current + (direction * step), 25), 400)
+      ]);
+    }
+  };
+
+  // 2. Handle Scroll for Sidebar Mini Patch
+  const handleMiniPatchWheel = (e) => {
+    // Optional: stopPropagation prevents the sidebar itself from scrolling 
+    e.preventDefault(); // <--- STOPS PAGE SCROLL
+    // if the mouse is strictly over the image
+    e.stopPropagation(); 
+    
+    const direction = e.deltaY < 0 ? 1 : -1;
+    const step = 0.2; // 0.2x increment
+
+    setPatchZoom((current) => Math.min(Math.max(current + (direction * step), 1), 5));
+  };
+
+  // --- SIDEBAR PATCH BUTTON HANDLERS ---
   const handlePatchZoomIn = (e) => { e.stopPropagation(); setPatchZoom((p) => Math.min(p + 0.5, 5)); };
   const handlePatchZoomOut = (e) => { e.stopPropagation(); setPatchZoom((p) => Math.max(p - 0.5, 1)); };
-  const handlePatchReset = (e) => { e.stopPropagation(); setPatchZoom(1);
-                                    setSidebarKey(prev => prev + 1);};
+  const handlePatchReset = (e) => { e.stopPropagation(); setPatchZoom(1); setSidebarKey(prev => prev + 1);};
 
   // --- FULLSCREEN HANDLERS ---
   const togglePatchFullscreen = () => {
@@ -147,9 +206,11 @@ const Viewer = () => {
         <div className="grid lg:grid-cols-[1fr_300px] gap-6 h-full">
           
           {/* === THE VIEWER WINDOW (Dynamic Content) === */}
+          {/* Added onWheel handler here to capture scroll events inside the viewer */}
           <motion.div
             className="bg-muted/30 rounded-2xl border border-border shadow-card overflow-hidden relative"
             style={{ height: "calc(100vh - 140px)" }}
+            onWheel={handleViewerWheel}
           >
             {/* VIEW MODE 1: THE FULL PATCH (Fullscreen) */}
             {isPatchFullscreen && selectedPatch ? (
@@ -265,25 +326,26 @@ const Viewer = () => {
                 </div>
 
                 {/* Sidebar Mini Viewer */}
-                <div ref={patchContainerRef} className="aspect-square bg-black/10 rounded-lg overflow-hidden relative group">
+                {/* Added onWheel handler here */}
+                <div 
+                    ref={patchContainerRef} 
+                    className="aspect-square bg-black/10 rounded-lg overflow-hidden relative group"
+                    //onWheel={handleMiniPatchWheel}
+                >
                   {isLoadingPatch ? (
                     <div className="flex items-center justify-center w-full h-full">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                     </div>
                   ) : (
                     <>
-                      {/* === UPDATED CODE FOR MINI-VIEW PAN === */}
                       <motion.img
                         key={sidebarKey}
                         src={selectedPatch.url}
                         alt="High Res Patch"
                         className={`w-full h-full object-cover transition-colors ${patchZoom > 1 ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
                         
-                        // 1. ENABLE DRAG ONLY WHEN ZOOMED IN
                         drag={patchZoom > 1}
                         
-                        // 2. DYNAMIC CONSTRAINTS
-                        // Allows panning proportional to how much we are zoomed in
                         dragConstraints={{
                           left: -150 * (patchZoom - 1),
                           right: 150 * (patchZoom - 1),
