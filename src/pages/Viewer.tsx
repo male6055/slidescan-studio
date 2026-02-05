@@ -138,7 +138,7 @@ const Viewer = () => {
     
     // Determine direction: negative deltaY is scrolling UP (Zoom In)
     const direction = e.deltaY < 0 ? 1 : -1;
-    const step = 5; // 5% increment for smoother scroll than buttons
+    const step = 25; // 5% increment for smoother scroll than buttons
 
     if (isPatchFullscreen) {
       setFullPatchZoom(([current]) => [
@@ -259,7 +259,7 @@ const Viewer = () => {
                   <img
                     src={tissueSample}
                     alt="Tissue sample"
-                    className="max-w-none w-[800px] select-none pointer-events-none"
+                    className="max-w-none w-[600px] select-none pointer-events-none"
                     draggable={false}
                   />
                   {showGrid && (
