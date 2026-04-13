@@ -1165,132 +1165,136 @@ const Viewer = () => {
     if (osdViewerRef.current) { osdViewerRef.current.destroy(); osdViewerRef.current = null; }
     if (annoRef.current)      { annoRef.current.destroy();      annoRef.current = null; }
 
-    // Grab the token before initializing OSD
     const token = localStorage.getItem("auth_token");
+    const dziUrl = `${API_BASE}/api/slides/${selectedSlide.name}/slide.dzi`;
 
-    const viewer = OpenSeadragon({
-      id: "osd-viewer",
-      prefixUrl: "//openseadragon.github.io/openseadragon/images/",
-      tileSources: `${API_BASE}/api/slides/${selectedSlide.name}/slide.dzi`,
-      showNavigationControl: false,
-      crossOriginPolicy: "Anonymous",
-      animationTime: 0.5,
-      blendTime: 0.1,
-      constrainDuringPan: true,
-      maxZoomPixelRatio: 10,
-      
-      // ── NEW: Force OSD to send the Auth Token ──
-      loadTilesWithAjax: true,
-      ajaxHeaders: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-
-    // const viewer = OpenSeadragon({
-    //   id: "osd-viewer",
-    //   prefixUrl: "//openseadragon.github.io/openseadragon/images/",
-    //   tileSources: `${API_BASE}/api/slides/${selectedSlide.name}/slide.dzi`,
-    //   showNavigationControl: false,
-    //   crossOriginPolicy: "Anonymous",
-    //   animationTime: 0.5,
-    //   blendTime: 0.1,
-    //   constrainDuringPan: true,
-    //   maxZoomPixelRatio: 10,
-    // });
-
-    osdViewerRef.current = viewer;
-
-    // Attach redraw hook to view movement events
-    const triggerDraw = () => stateRefs.current.drawGrid();
-    viewer.addHandler("open", triggerDraw);
-    viewer.addHandler("animation", triggerDraw);
-    viewer.addHandler("update-viewport", triggerDraw);
-    viewer.addHandler("resize", triggerDraw);
-    viewer.addHandler("zoom", (e) => setZoom([Math.round(e.zoom * 100)]));
-
-    // CLICK INTERCEPTOR
-    viewer.addHandler("canvas-click", (e) => {
-      const { showGrid, tileGrid, handleGridClick } = stateRefs.current;
-      if (!showGrid || !tileGrid || !handleGridClick) return;
-
-      const tiledImage = viewer.world.getItemAt(0);
-      if (!tiledImage) return;
-
-      const bounds = tiledImage.getBounds();
-      const rows = tileGrid.rows || 4;
-      const cols = tileGrid.cols || 4;
-      const normalizedPoint = viewer.viewport.pointFromPixel(e.position);
-
-      // Check if click was inside the actual image bounds
-      if (normalizedPoint.x >= bounds.x && normalizedPoint.x <= bounds.x + bounds.width &&
-          normalizedPoint.y >= bounds.y && normalizedPoint.y <= bounds.y + bounds.height) {
+    // 1. Manually fetch the DZI XML string using our authenticated fetch
+    authFetch(dziUrl)
+      .then(response => {
+        if (!response.ok) throw new Error("Failed to fetch DZI file");
+        return response.text();
+      })
+      .then(dziXmlString => {
         
-        e.preventDefaultAction = true; // Stop zoom
-
-        const cellWidth = bounds.width / cols;
-        const cellHeight = bounds.height / rows;
-
-        const col = Math.floor((normalizedPoint.x - bounds.x) / cellWidth);
-        const row = Math.floor((normalizedPoint.y - bounds.y) / cellHeight);
-
-        if (row >= 0 && row < rows && col >= 0 && col < cols) {
-          const tile = tileGrid.tiles.find(t => t.row === row && t.col === col);
-          if (tile) handleGridClick(tile);
-        }
-      }
-    });
-
-    // HOVER TRACKER
-    const hoverTracker = new OpenSeadragon.MouseTracker({
-      element: viewer.element,
-      moveHandler: (e) => {
-        const { showGrid, tileGrid } = stateRefs.current;
-        if (!showGrid || !tileGrid) { setHoveredTile(null); return; }
-
-        const tiledImage = viewer.world.getItemAt(0);
-        if (!tiledImage) return;
-
-        const bounds = tiledImage.getBounds();
-        const rows = tileGrid.rows || 4;
-        const cols = tileGrid.cols || 4;
-        const normalizedPoint = viewer.viewport.pointFromPixel(e.position);
-
-        if (normalizedPoint.x >= bounds.x && normalizedPoint.x <= bounds.x + bounds.width &&
-            normalizedPoint.y >= bounds.y && normalizedPoint.y <= bounds.y + bounds.height) {
+        // 2. Initialize OSD, passing the XML string instead of the URL
+        const viewer = OpenSeadragon({
+          id: "osd-viewer",
+          prefixUrl: "//openseadragon.github.io/openseadragon/images/",
+          // OSD expects a URL, but we can hack it by passing a Data URI containing the XML string
+          tileSources: "data:application/xml;utf8," + encodeURIComponent(dziXmlString),
+          showNavigationControl: false,
+          crossOriginPolicy: "Anonymous",
+          animationTime: 0.5,
+          blendTime: 0.1,
+          constrainDuringPan: true,
+          maxZoomPixelRatio: 10,
           
-          const cellWidth = bounds.width / cols;
-          const cellHeight = bounds.height / rows;
+          // 3. Keep these to ensure the image tiles themselves get the token
+          loadTilesWithAjax: true,
+          ajaxHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+        });
 
-          const col = Math.floor((normalizedPoint.x - bounds.x) / cellWidth);
-          const row = Math.floor((normalizedPoint.y - bounds.y) / cellHeight);
+        osdViewerRef.current = viewer;
 
-          if (row >= 0 && row < rows && col >= 0 && col < cols) {
-            setHoveredTile((prev) => (prev?.row === row && prev?.col === col) ? prev : { row, col });
-          } else {
-            setHoveredTile(null);
+        // Attach redraw hook to view movement events
+        const triggerDraw = () => stateRefs.current.drawGrid();
+        viewer.addHandler("open", triggerDraw);
+        viewer.addHandler("animation", triggerDraw);
+        viewer.addHandler("update-viewport", triggerDraw);
+        viewer.addHandler("resize", triggerDraw);
+        viewer.addHandler("zoom", (e) => setZoom([Math.round(e.zoom * 100)]));
+
+        // CLICK INTERCEPTOR
+        viewer.addHandler("canvas-click", (e) => {
+          const { showGrid, tileGrid, handleGridClick } = stateRefs.current;
+          if (!showGrid || !tileGrid || !handleGridClick) return;
+
+          const tiledImage = viewer.world.getItemAt(0);
+          if (!tiledImage) return;
+
+          const bounds = tiledImage.getBounds();
+          const rows = tileGrid.rows || 4;
+          const cols = tileGrid.cols || 4;
+          const normalizedPoint = viewer.viewport.pointFromPixel(e.position);
+
+          // Check if click was inside the actual image bounds
+          if (normalizedPoint.x >= bounds.x && normalizedPoint.x <= bounds.x + bounds.width &&
+              normalizedPoint.y >= bounds.y && normalizedPoint.y <= bounds.y + bounds.height) {
+            
+            e.preventDefaultAction = true; // Stop zoom
+
+            const cellWidth = bounds.width / cols;
+            const cellHeight = bounds.height / rows;
+
+            const col = Math.floor((normalizedPoint.x - bounds.x) / cellWidth);
+            const row = Math.floor((normalizedPoint.y - bounds.y) / cellHeight);
+
+            if (row >= 0 && row < rows && col >= 0 && col < cols) {
+              const tile = tileGrid.tiles.find(t => t.row === row && t.col === col);
+              if (tile) handleGridClick(tile);
+            }
           }
-        } else {
-          setHoveredTile(null);
-        }
-      },
-      leaveHandler: () => setHoveredTile(null)
-    });
+        });
 
-    const anno = Annotorious(viewer, { disableEditor: true, widgets: [] });
-    annoRef.current = anno;
-    const currentMode = drawingModeRef.current;
-    if (currentMode === "rect") { anno.setDrawingTool("rect"); anno.setDrawingEnabled(true); }
-    else if (currentMode === "circle") { anno.setDrawingTool("circle"); anno.setDrawingEnabled(true); }
-    else { anno.setDrawingEnabled(false); }
+        // HOVER TRACKER
+        const hoverTracker = new OpenSeadragon.MouseTracker({
+          element: viewer.element,
+          moveHandler: (e) => {
+            const { showGrid, tileGrid } = stateRefs.current;
+            if (!showGrid || !tileGrid) { setHoveredTile(null); return; }
 
-    anno.on("createAnnotation", (annotation) => {
-      const shapeType = drawingModeRef.current === "circle" ? "circle" : "rect";
-      setAnnotations((prev) => [...prev, { id: annotation.id, label: `Region ${prev.length + 1}`, shape: shapeType, raw: annotation }]);
-    });
-    anno.on("deleteAnnotation", (annotation) => {
-      setAnnotations((prev) => prev.filter((a) => a.id !== annotation.id));
-    });
+            const tiledImage = viewer.world.getItemAt(0);
+            if (!tiledImage) return;
+
+            const bounds = tiledImage.getBounds();
+            const rows = tileGrid.rows || 4;
+            const cols = tileGrid.cols || 4;
+            const normalizedPoint = viewer.viewport.pointFromPixel(e.position);
+
+            if (normalizedPoint.x >= bounds.x && normalizedPoint.x <= bounds.x + bounds.width &&
+                normalizedPoint.y >= bounds.y && normalizedPoint.y <= bounds.y + bounds.height) {
+              
+              const cellWidth = bounds.width / cols;
+              const cellHeight = bounds.height / rows;
+
+              const col = Math.floor((normalizedPoint.x - bounds.x) / cellWidth);
+              const row = Math.floor((normalizedPoint.y - bounds.y) / cellHeight);
+
+              if (row >= 0 && row < rows && col >= 0 && col < cols) {
+                setHoveredTile((prev) => (prev?.row === row && prev?.col === col) ? prev : { row, col });
+              } else {
+                setHoveredTile(null);
+              }
+            } else {
+              setHoveredTile(null);
+            }
+          },
+          leaveHandler: () => setHoveredTile(null)
+        });
+
+        const anno = Annotorious(viewer, { disableEditor: true, widgets: [] });
+        annoRef.current = anno;
+        const currentMode = drawingModeRef.current;
+        if (currentMode === "rect") { anno.setDrawingTool("rect"); anno.setDrawingEnabled(true); }
+        else if (currentMode === "circle") { anno.setDrawingTool("circle"); anno.setDrawingEnabled(true); }
+        else { anno.setDrawingEnabled(false); }
+
+        anno.on("createAnnotation", (annotation) => {
+          const shapeType = drawingModeRef.current === "circle" ? "circle" : "rect";
+          setAnnotations((prev) => [...prev, { id: annotation.id, label: `Region ${prev.length + 1}`, shape: shapeType, raw: annotation }]);
+        });
+        anno.on("deleteAnnotation", (annotation) => {
+          setAnnotations((prev) => prev.filter((a) => a.id !== annotation.id));
+        });
+
+      })
+      .catch(err => {
+        console.error("Error loading DZI:", err);
+        setError("Failed to load slide data. Ensure you are logged in.");
+      });
 
     return () => {
-      hoverTracker.destroy();
+      // Basic cleanup, relying on the next render cycle to catch the deeper cleanup if needed
       if (annoRef.current)   { annoRef.current.destroy();   annoRef.current = null; }
       if (osdViewerRef.current) { osdViewerRef.current.destroy(); osdViewerRef.current = null; }
     };
