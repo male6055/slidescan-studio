@@ -970,6 +970,14 @@ const SlideSelector = ({ slides, selectedSlide, onSelect, loading }) => {
 const Viewer = () => {
   const navigate = useNavigate();
 
+  // ── Route Protection Check ──
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      navigate("/login"); // Kick them out if no token exists
+    }
+  }, [navigate]);
+
   // ── Slide selection state ──
   const [slides, setSlides]               = useState([]);
   const [slidesLoading, setSlidesLoading] = useState(true);
