@@ -1165,6 +1165,9 @@ const Viewer = () => {
     if (osdViewerRef.current) { osdViewerRef.current.destroy(); osdViewerRef.current = null; }
     if (annoRef.current)      { annoRef.current.destroy();      annoRef.current = null; }
 
+    // Grab the token before initializing OSD
+    const token = localStorage.getItem("auth_token");
+
     const viewer = OpenSeadragon({
       id: "osd-viewer",
       prefixUrl: "//openseadragon.github.io/openseadragon/images/",
@@ -1175,7 +1178,23 @@ const Viewer = () => {
       blendTime: 0.1,
       constrainDuringPan: true,
       maxZoomPixelRatio: 10,
+      
+      // ── NEW: Force OSD to send the Auth Token ──
+      loadTilesWithAjax: true,
+      ajaxHeaders: token ? { Authorization: `Bearer ${token}` } : {},
     });
+
+    // const viewer = OpenSeadragon({
+    //   id: "osd-viewer",
+    //   prefixUrl: "//openseadragon.github.io/openseadragon/images/",
+    //   tileSources: `${API_BASE}/api/slides/${selectedSlide.name}/slide.dzi`,
+    //   showNavigationControl: false,
+    //   crossOriginPolicy: "Anonymous",
+    //   animationTime: 0.5,
+    //   blendTime: 0.1,
+    //   constrainDuringPan: true,
+    //   maxZoomPixelRatio: 10,
+    // });
 
     osdViewerRef.current = viewer;
 
@@ -1252,7 +1271,7 @@ const Viewer = () => {
           setHoveredTile(null);
         }
       },
-      exitHandler: () => setHoveredTile(null)
+      leaveHandler: () => setHoveredTile(null)
     });
 
     const anno = Annotorious(viewer, { disableEditor: true, widgets: [] });
