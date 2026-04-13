@@ -1158,7 +1158,7 @@ const Viewer = () => {
   useEffect(() => { stateRefs.current.handleGridClick = handleGridClick; }, [handleGridClick]);
 
 
-  // ── OSD Initialization & Event Hooks ──
+// ── OSD Initialization & Event Hooks ──
   useEffect(() => {
     if (viewMode !== "dzi" || !selectedSlide?.has_dzi || isPatchFullscreen) return;
 
@@ -1176,12 +1176,33 @@ const Viewer = () => {
       })
       .then(dziXmlString => {
         
-        // 2. Initialize OSD, passing the XML string instead of the URL
+        // 2. Parse the XML string into a DOM object
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(dziXmlString, "application/xml");
+        const imageNode = xmlDoc.getElementsByTagName("Image")[0];
+        const sizeNode = xmlDoc.getElementsByTagName("Size")[0];
+
+        // 3. Construct a standard OpenSeadragon DZI object
+        const dziObject = {
+          Image: {
+            xmlns: imageNode.getAttribute("xmlns"),
+            // CRITICAL FIX: Explicitly set the base URL for the image tiles
+            Url: dziUrl.replace(".dzi", "_files/"),
+            Format: imageNode.getAttribute("Format"),
+            Overlap: imageNode.getAttribute("Overlap"),
+            TileSize: imageNode.getAttribute("TileSize"),
+            Size: {
+              Height: sizeNode.getAttribute("Height"),
+              Width: sizeNode.getAttribute("Width")
+            }
+          }
+        };
+
+        // 4. Initialize OSD with the clean object
         const viewer = OpenSeadragon({
           id: "osd-viewer",
           prefixUrl: "//openseadragon.github.io/openseadragon/images/",
-          // OSD expects a URL, but we can hack it by passing a Data URI containing the XML string
-          tileSources: "data:application/xml;utf8," + encodeURIComponent(dziXmlString),
+          tileSources: dziObject, // Pass the parsed object instead of a string
           showNavigationControl: false,
           crossOriginPolicy: "Anonymous",
           animationTime: 0.5,
@@ -1189,7 +1210,7 @@ const Viewer = () => {
           constrainDuringPan: true,
           maxZoomPixelRatio: 10,
           
-          // 3. Keep these to ensure the image tiles themselves get the token
+          // Ensure the actual image tiles are fetched with the auth token
           loadTilesWithAjax: true,
           ajaxHeaders: token ? { Authorization: `Bearer ${token}` } : {},
         });
@@ -1217,11 +1238,10 @@ const Viewer = () => {
           const cols = tileGrid.cols || 4;
           const normalizedPoint = viewer.viewport.pointFromPixel(e.position);
 
-          // Check if click was inside the actual image bounds
           if (normalizedPoint.x >= bounds.x && normalizedPoint.x <= bounds.x + bounds.width &&
               normalizedPoint.y >= bounds.y && normalizedPoint.y <= bounds.y + bounds.height) {
             
-            e.preventDefaultAction = true; // Stop zoom
+            e.preventDefaultAction = true;
 
             const cellWidth = bounds.width / cols;
             const cellHeight = bounds.height / rows;
@@ -1294,7 +1314,6 @@ const Viewer = () => {
       });
 
     return () => {
-      // Basic cleanup, relying on the next render cycle to catch the deeper cleanup if needed
       if (annoRef.current)   { annoRef.current.destroy();   annoRef.current = null; }
       if (osdViewerRef.current) { osdViewerRef.current.destroy(); osdViewerRef.current = null; }
     };
