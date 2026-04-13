@@ -1147,13 +1147,55 @@ const Viewer = () => {
     stateRefs.current.drawGrid = drawGrid;
   }, [showGrid, tileGrid, drawGrid]);
 
-  const handleGridClick = useCallback((tile) => {
+  const handleGridClick = useCallback(async (tile) => {
     if (!selectedSlide) return;
+    
+    // Show the loading spinner
     setIsLoadingPatch(true);
-    const url = `${API_BASE}/api/slides/${selectedSlide.name}/tiles/${tile.filename}`;
-    setSelectedPatch({ row: tile.row, col: tile.col, url, filename: tile.filename });
-    setIsLoadingPatch(false);
+    
+    const endpoint = `${API_BASE}/api/slides/${selectedSlide.name}/tiles/${tile.filename}`;
+    
+    try {
+      // 1. Fetch the image securely using our auth token
+      const response = await authFetch(endpoint);
+      if (!response.ok) throw new Error("Failed to load authenticated patch");
+      
+      // 2. Convert the raw image data into a Blob
+      const blob = await response.blob();
+      
+      // 3. Create a temporary, local browser URL for this specific image data
+      const objectUrl = URL.createObjectURL(blob);
+      
+      // 4. Update the state with the safe, local URL
+      setSelectedPatch(prev => {
+        // Clean up the old URL to prevent memory leaks!
+        if (prev?.url && prev.url.startsWith("blob:")) {
+          URL.revokeObjectURL(prev.url);
+        }
+        return { 
+          row: tile.row, 
+          col: tile.col, 
+          url: objectUrl, 
+          filename: tile.filename 
+        };
+      });
+
+    } catch (err) {
+      console.error("Error fetching patch:", err);
+      // If it fails, set url to null so the "No Data" placeholder shows
+      setSelectedPatch({ row: tile.row, col: tile.col, url: null, filename: tile.filename });
+    } finally {
+      setIsLoadingPatch(false);
+    }
   }, [selectedSlide]);
+
+  // const handleGridClick = useCallback((tile) => {
+  //   if (!selectedSlide) return;
+  //   setIsLoadingPatch(true);
+  //   const url = `${API_BASE}/api/slides/${selectedSlide.name}/tiles/${tile.filename}`;
+  //   setSelectedPatch({ row: tile.row, col: tile.col, url, filename: tile.filename });
+  //   setIsLoadingPatch(false);
+  // }, [selectedSlide]);
 
   useEffect(() => { stateRefs.current.handleGridClick = handleGridClick; }, [handleGridClick]);
 
