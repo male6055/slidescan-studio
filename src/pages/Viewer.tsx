@@ -1449,26 +1449,14 @@ const Viewer = () => {
             </div>
           </div>
 
-          {/* ── NEW: Conditional Dropdown / Exit Patch Button ── */}
           <div className="flex items-center gap-3 flex-wrap">
-            {selectedPatch && !isPatchFullscreen ? (
-              <Button 
-                variant="outline" 
-                onClick={() => setSelectedPatch(null)}
-                className="gap-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground rounded-xl transition-colors"
-              >
-                <X className="w-4 h-4" /> Exit Mini Patch
-              </Button>
-            ) : (
-              <SlideSelector
-                slides={slides}
-                selectedSlide={selectedSlide}
-                onSelect={handleSlideSelect}
-                loading={slidesLoading}
-              />
-            )}
+            <SlideSelector
+              slides={slides}
+              selectedSlide={selectedSlide}
+              onSelect={handleSlideSelect}
+              loading={slidesLoading}
+            />
           </div>
-          {/* ─────────────────────────────────────────────────── */}
 
           <div className="flex items-center gap-2">
             {!isPatchFullscreen && selectedSlide?.has_tiles && (
