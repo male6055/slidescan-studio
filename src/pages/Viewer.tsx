@@ -1954,7 +1954,7 @@ const Viewer = () => {
         .finally(() => setTilesLoading(false));
 
       // Fetch AI Metadata JSON (assuming standard endpoint)
-      authFetch(`${API_BASE}/api/slides/${slide.name}/metadata.json`)
+      authFetch(`${API_BASE}/api/slides/${slide.name}/slide_metadata.json`)
         .then((r) => r.ok ? r.json() : null)
         .then((data) => { if (data) setMetadata(data); })
         .catch((err) => console.log("No AI metadata found for this slide.", err));
