@@ -2080,7 +2080,7 @@ const Viewer = () => {
   }, [showGrid, tileGrid, drawGrid]);
 
   const handleGridClick = useCallback(async (tile) => {
-    if (!selectedSlide) return;
+    if (!selectedSlide || !tile?.filename) return;
     setIsLoadingPatch(true);
     const endpoint = `${API_BASE}/api/slides/${selectedSlide.name}/tiles/${tile.filename}`;
     
@@ -2305,6 +2305,13 @@ const Viewer = () => {
   const handlePatchZoomOut = (e) => { e.stopPropagation(); setPatchZoom((p) => Math.max(p - 0.5, 1)); };
   const handlePatchReset   = (e) => { e.stopPropagation(); setPatchZoom(1); setSidebarKey((k) => k + 1); };
   const togglePatchFullscreen = () => { setIsPatchFullscreen(!isPatchFullscreen); setRotation(0); setShowMetadataPanel(false); };
+  const handleExitPatch = () => {
+    // Exit fullscreen first to avoid any transient render path
+    // that might still assume a non-null selected patch.
+    setIsPatchFullscreen(false);
+    setShowMetadataPanel(false);
+    setSelectedPatch(null);
+  };
 
   const gridRows = tileGrid?.rows || 4;
   const gridCols = tileGrid?.cols || 4;
@@ -2340,7 +2347,7 @@ const Viewer = () => {
             {selectedPatch ? (
               <Button 
                 variant="outline" 
-                onClick={() => { setSelectedPatch(null); setIsPatchFullscreen(false); }}
+                onClick={handleExitPatch}
                 className="gap-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground rounded-xl transition-colors shadow-sm"
               >
                 <X className="w-4 h-4" /> {isPatchFullscreen ? "Exit Fullscreen Patch" : "Exit Mini Patch"}
@@ -2437,10 +2444,10 @@ const Viewer = () => {
 
                   {/* Tile Navigation Pills */}
                   <div className="absolute top-4 left-4 z-30 flex bg-white/90 backdrop-blur-md rounded-full p-1 shadow-md border border-border">
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.row === 0} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row - 1 && t.col === selectedPatch.col))}>Up</Button>
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.row === gridRows - 1} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row + 1 && t.col === selectedPatch.col))}>Down</Button>
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.col === 0} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col - 1))}>Left</Button>
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.col === gridCols - 1} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col + 1))}>Right</Button>
+                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.row === 0} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row - 1 && t.col === selectedPatch.col))}>Up</Button>
+                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.row === gridRows - 1} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row + 1 && t.col === selectedPatch.col))}>Down</Button>
+                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.col === 0} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col - 1))}>Left</Button>
+                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.col === gridCols - 1} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col + 1))}>Right</Button>
                   </div>
 
                   {/* AI Metadata Floating Panel */}
@@ -2597,7 +2604,7 @@ const Viewer = () => {
                       <h3 className="font-semibold text-primary">Selected Patch</h3>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/20" onClick={togglePatchFullscreen}><Expand className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedPatch(null)}><X className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleExitPatch}><X className="w-4 h-4" /></Button>
                       </div>
                     </div>
                     <div ref={patchContainerRef} className="aspect-square bg-black/10 rounded-lg overflow-hidden relative group">
