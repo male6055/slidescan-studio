@@ -2106,7 +2106,7 @@ const Viewer = () => {
 
   // ── OSD Initialization ──
   useEffect(() => {
-    if (viewMode !== "dzi" || !selectedSlide?.has_dzi || isPatchFullscreen) return;
+    if (viewMode !== "dzi" || !selectedSlide?.has_dzi) return;
 
     if (osdViewerRef.current) { osdViewerRef.current.destroy(); osdViewerRef.current = null; }
     if (annoRef.current)      { annoRef.current.destroy();      annoRef.current = null; }
@@ -2245,7 +2245,7 @@ const Viewer = () => {
       if (annoRef.current)   { annoRef.current.destroy();   annoRef.current = null; }
       if (osdViewerRef.current) { osdViewerRef.current.destroy(); osdViewerRef.current = null; }
     };
-  }, [viewMode, selectedSlide, isPatchFullscreen, resetKey]);
+  }, [viewMode, selectedSlide, resetKey]);
 
   useEffect(() => { drawGrid(); }, [showGrid, drawGrid, selectedPatch, hoveredTile]);
 
@@ -2385,6 +2385,7 @@ const Viewer = () => {
           <div className="grid lg:grid-cols-[1fr_300px] gap-6 h-full">
             
             {/* ── LEFT: VIEWER WINDOW ── */}
+            {/* ── LEFT: VIEWER WINDOW ── */}
             <motion.div className="bg-muted/30 rounded-2xl border border-border shadow-card overflow-hidden relative group" style={{ height: "calc(100vh - 160px)" }}>
               
               {/* Left Toolbar (Hidden during Fullscreen Patch) */}
@@ -2413,109 +2414,9 @@ const Viewer = () => {
                 </div>
               )}
 
-              {/* ── FULLSCREEN PATCH VIEW ── */}
-              {isPatchFullscreen && selectedPatch ? (
-                <div ref={fullscreenContainerRef} className="relative w-full h-full flex flex-col overflow-hidden bg-black/5">
-                  
-                  {/* Fullscreen Header Controls */}
-                  <div className="absolute top-4 right-4 z-30 flex items-center gap-3">
-                    <Button 
-                      onClick={() => setShowWbcBoxes(!showWbcBoxes)} 
-                      variant={showWbcBoxes ? "default" : "outline"} 
-                      className="shadow-md rounded-xl font-bold"
-                    >
-                      {showWbcBoxes ? "Hide WBC" : "Show WBC"}
-                    </Button>
-                    <Button 
-                      onClick={() => setShowMetadataPanel(!showMetadataPanel)} 
-                      variant={showMetadataPanel ? "secondary" : "default"} 
-                      className="shadow-md rounded-xl font-bold"
-                    >
-                      Tile Details
-                    </Button>
-                  </div>
-
-                  {/* Tile Navigation Pills */}
-                  <div className="absolute top-4 left-4 z-30 flex bg-white/90 backdrop-blur-md rounded-full p-1 shadow-md border border-border">
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.row === 0} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row - 1 && t.col === selectedPatch.col))}>Up</Button>
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.row === gridRows - 1} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row + 1 && t.col === selectedPatch.col))}>Down</Button>
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.col === 0} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col - 1))}>Left</Button>
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.col === gridCols - 1} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col + 1))}>Right</Button>
-                  </div>
-
-                  {/* AI Metadata Floating Panel */}
-                  <AnimatePresence>
-                    {showMetadataPanel && (
-                      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="absolute top-20 right-4 w-72 bg-white/95 backdrop-blur-md border border-border rounded-2xl shadow-xl z-40 p-5 flex flex-col gap-4">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-extrabold text-foreground">WBC Analysis</h3>
-                          <span className="bg-primary/10 text-primary font-bold text-xs px-2 py-1 rounded-md">{activeTileWbcs.length} Total</span>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          {activeTileWbcs.length === 0 ? (
-                            <p className="text-sm text-muted-foreground font-medium">No WBCs detected in this tile.</p>
-                          ) : (
-                            Object.entries(activeTileCounts).map(([cName, count]) => (
-                              <div key={cName} className="flex items-center justify-between p-2.5 bg-muted/50 rounded-xl border border-border">
-                                <span className="text-sm font-bold text-foreground capitalize">{cName.replace('_', ' ')}</span>
-                                <span className="font-mono text-xs font-bold text-muted-foreground bg-background px-2 py-0.5 rounded border border-border shadow-sm">{String(count)}</span>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Center Image with AI Percentage Overlays */}
-                  <div className="flex-1 flex items-center justify-center p-4">
-                    <motion.div
-                      key={`patch-${resetKey}`}
-                      animate={{ scale: fullPatchZoom[0] / 100, rotate: rotation }}
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      className="relative shadow-2xl cursor-grab active:cursor-grabbing w-[600px] h-[600px] bg-background border border-border rounded-lg overflow-hidden"
-                      drag={fullPatchZoom[0] > 100}
-                      dragConstraints={fullscreenContainerRef}
-                      dragElastic={0.1}
-                    >
-                      <img src={selectedPatch.url} alt="Patch View" className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" draggable={false} onError={(e) => { e.currentTarget.src = "https://placehold.co/800x800?text=No+Data"; }} />
-                      
-                      {/* Mapping AI Bounding Boxes directly over the image */}
-                      {showWbcBoxes && activeTileWbcs.map((wbc, idx) => {
-                        const [bx1, by1, bx2, by2] = wbc.box;
-                        const color = WBC_COLORS[wbc.class_name] || '#94a3b8';
-                        return (
-                          <div 
-                            key={idx} 
-                            className="absolute border-[2.5px] pointer-events-none rounded-sm shadow-sm z-40"
-                            style={{
-                              left: `${(bx1 / TILE_W) * 100}%`,
-                              top: `${(by1 / TILE_H) * 100}%`,
-                              width: `${((bx2 - bx1) / TILE_W) * 100}%`,
-                              height: `${((by2 - by1) / TILE_H) * 100}%`,
-                              borderColor: color,
-                              boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.4), 0 0 4px ${color}`
-                            }}
-                          >
-                            <div 
-                              className="absolute -top-5 -left-0.5 px-1.5 py-0.5 text-[10px] font-extrabold text-white whitespace-nowrap rounded shadow-md z-50 uppercase tracking-wide"
-                              style={{ backgroundColor: color }}
-                            >
-                              {wbc.class_name} <span className="opacity-80 ml-1 text-[9px]">{Math.round(wbc.confidence * 100)}%</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </motion.div>
-                  </div>
-
-                  <div className="absolute bottom-4 left-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium z-10 shadow-lg">
-                    Patch: Row {selectedPatch.row}, Col {selectedPatch.col}
-                  </div>
-                </div>
-              ) : viewMode === "dzi" ? (
-                /* DZI VIEW */
-                <div className="relative w-full h-full">
+              {/* ── BACKGROUND LAYER: DZI VIEW ── */}
+              {viewMode === "dzi" && (
+                <div className={`absolute inset-0 w-full h-full transition-opacity duration-200 ${isPatchFullscreen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                   <div id="osd-viewer" className="w-full h-full" />
                   <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 15 }} />
                   <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-border z-10 ml-16">
@@ -2528,9 +2429,11 @@ const Viewer = () => {
                     </div>
                   )}
                 </div>
-              ) : (
-                /* TILE GRID VIEW */
-                <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-black/5">
+              )}
+
+              {/* ── BACKGROUND LAYER: TILE GRID VIEW ── */}
+              {viewMode === "tiles" && (
+                <div className={`absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden bg-black/5 transition-opacity duration-200 ${isPatchFullscreen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                   {tilesLoading ? (
                     <div className="flex flex-col items-center gap-3 text-muted-foreground">
                       <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -2564,6 +2467,110 @@ const Viewer = () => {
                   )}
                 </div>
               )}
+
+              {/* ── FOREGROUND LAYER: FULLSCREEN PATCH VIEW ── */}
+              <AnimatePresence>
+                {isPatchFullscreen && selectedPatch && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    ref={fullscreenContainerRef} 
+                    className="absolute inset-0 z-30 flex flex-col overflow-hidden bg-background"
+                  >
+                    
+                    {/* Fullscreen Header Controls */}
+                    <div className="absolute top-4 right-4 z-30 flex items-center gap-3">
+                      <Button onClick={() => setShowWbcBoxes(!showWbcBoxes)} variant={showWbcBoxes ? "default" : "outline"} className="shadow-md rounded-xl font-bold">
+                        {showWbcBoxes ? "Hide WBC" : "Show WBC"}
+                      </Button>
+                      <Button onClick={() => setShowMetadataPanel(!showMetadataPanel)} variant={showMetadataPanel ? "secondary" : "default"} className="shadow-md rounded-xl font-bold">
+                        Tile Details
+                      </Button>
+                    </div>
+
+                    {/* Tile Navigation Pills */}
+                    <div className="absolute top-4 left-4 z-30 flex bg-white/90 backdrop-blur-md rounded-full p-1 shadow-md border border-border">
+                      <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.row === 0} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row - 1 && t.col === selectedPatch.col))}>Up</Button>
+                      <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.row === gridRows - 1} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row + 1 && t.col === selectedPatch.col))}>Down</Button>
+                      <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.col === 0} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col - 1))}>Left</Button>
+                      <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.col === gridCols - 1} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col + 1))}>Right</Button>
+                    </div>
+
+                    {/* AI Metadata Floating Panel */}
+                    <AnimatePresence>
+                      {showMetadataPanel && (
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="absolute top-20 right-4 w-72 bg-white/95 backdrop-blur-md border border-border rounded-2xl shadow-xl z-40 p-5 flex flex-col gap-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-extrabold text-foreground">WBC Analysis</h3>
+                            <span className="bg-primary/10 text-primary font-bold text-xs px-2 py-1 rounded-md">{activeTileWbcs.length} Total</span>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {activeTileWbcs.length === 0 ? (
+                              <p className="text-sm text-muted-foreground font-medium">No WBCs detected in this tile.</p>
+                            ) : (
+                              Object.entries(activeTileCounts as Record<string, number>).map(([cName, count]) => (
+                                <div key={cName} className="flex items-center justify-between p-2.5 bg-muted/50 rounded-xl border border-border">
+                                  <span className="text-sm font-bold text-foreground capitalize">{cName.replace('_', ' ')}</span>
+                                  <span className="font-mono text-xs font-bold text-muted-foreground bg-background px-2 py-0.5 rounded border border-border shadow-sm">{count}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Center Image with AI Percentage Overlays */}
+                    <div className="flex-1 flex items-center justify-center p-4">
+                      <motion.div
+                        key={`patch-${resetKey}`}
+                        animate={{ scale: fullPatchZoom[0] / 100, rotate: rotation }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className="relative shadow-2xl cursor-grab active:cursor-grabbing w-[600px] h-[600px] bg-background border border-border rounded-lg overflow-hidden"
+                        drag={fullPatchZoom[0] > 100}
+                        dragConstraints={fullscreenContainerRef}
+                        dragElastic={0.1}
+                      >
+                        <img src={selectedPatch?.url} alt="Patch View" className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" draggable={false} onError={(e) => { e.currentTarget.src = "https://placehold.co/800x800?text=No+Data"; }} />
+                        
+                        {/* Mapping AI Bounding Boxes directly over the image */}
+                        {showWbcBoxes && activeTileWbcs.map((wbc, idx) => {
+                          const [bx1, by1, bx2, by2] = wbc.box;
+                          const color = WBC_COLORS[wbc.class_name] || '#94a3b8';
+                          return (
+                            <div 
+                              key={idx} 
+                              className="absolute border-[2.5px] pointer-events-none rounded-sm shadow-sm z-40"
+                              style={{
+                                left: `${(bx1 / TILE_W) * 100}%`,
+                                top: `${(by1 / TILE_H) * 100}%`,
+                                width: `${((bx2 - bx1) / TILE_W) * 100}%`,
+                                height: `${((by2 - by1) / TILE_H) * 100}%`,
+                                borderColor: color,
+                                boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.4), 0 0 4px ${color}`
+                              }}
+                            >
+                              <div 
+                                className="absolute -top-5 -left-0.5 px-1.5 py-0.5 text-[10px] font-extrabold text-white whitespace-nowrap rounded shadow-md z-50 uppercase tracking-wide"
+                                style={{ backgroundColor: color }}
+                              >
+                                {wbc.class_name} <span className="opacity-80 ml-1 text-[9px]">{Math.round(wbc.confidence * 100)}%</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </motion.div>
+                    </div>
+
+                    <div className="absolute bottom-4 left-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium z-10 shadow-lg">
+                      Patch: Row {selectedPatch.row}, Col {selectedPatch.col}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
             </motion.div>
 
             {/* ── RIGHT SIDEBAR ── */}
