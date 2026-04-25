@@ -2080,7 +2080,7 @@ const Viewer = () => {
   }, [showGrid, tileGrid, drawGrid]);
 
   const handleGridClick = useCallback(async (tile) => {
-    if (!selectedSlide || !tile?.filename) return;
+    if (!selectedSlide) return;
     setIsLoadingPatch(true);
     const endpoint = `${API_BASE}/api/slides/${selectedSlide.name}/tiles/${tile.filename}`;
     
@@ -2305,13 +2305,6 @@ const Viewer = () => {
   const handlePatchZoomOut = (e) => { e.stopPropagation(); setPatchZoom((p) => Math.max(p - 0.5, 1)); };
   const handlePatchReset   = (e) => { e.stopPropagation(); setPatchZoom(1); setSidebarKey((k) => k + 1); };
   const togglePatchFullscreen = () => { setIsPatchFullscreen(!isPatchFullscreen); setRotation(0); setShowMetadataPanel(false); };
-  const handleExitPatch = () => {
-    // Exit fullscreen first to avoid any transient render path
-    // that might still assume a non-null selected patch.
-    setIsPatchFullscreen(false);
-    setShowMetadataPanel(false);
-    setSelectedPatch(null);
-  };
 
   const gridRows = tileGrid?.rows || 4;
   const gridCols = tileGrid?.cols || 4;
@@ -2347,7 +2340,7 @@ const Viewer = () => {
             {selectedPatch ? (
               <Button 
                 variant="outline" 
-                onClick={handleExitPatch}
+                onClick={() => { setSelectedPatch(null); setIsPatchFullscreen(false); }}
                 className="gap-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground rounded-xl transition-colors shadow-sm"
               >
                 <X className="w-4 h-4" /> {isPatchFullscreen ? "Exit Fullscreen Patch" : "Exit Mini Patch"}
@@ -2444,10 +2437,10 @@ const Viewer = () => {
 
                   {/* Tile Navigation Pills */}
                   <div className="absolute top-4 left-4 z-30 flex bg-white/90 backdrop-blur-md rounded-full p-1 shadow-md border border-border">
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.row === 0} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row - 1 && t.col === selectedPatch.col))}>Up</Button>
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.row === gridRows - 1} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row + 1 && t.col === selectedPatch.col))}>Down</Button>
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.col === 0} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col - 1))}>Left</Button>
-                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={!tileGrid || selectedPatch.col === gridCols - 1} onClick={() => handleGridClick(tileGrid?.tiles?.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col + 1))}>Right</Button>
+                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.row === 0} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row - 1 && t.col === selectedPatch.col))}>Up</Button>
+                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.row === gridRows - 1} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row + 1 && t.col === selectedPatch.col))}>Down</Button>
+                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.col === 0} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col - 1))}>Left</Button>
+                    <Button variant="ghost" size="sm" className="rounded-full px-4 text-xs font-bold" disabled={selectedPatch.col === gridCols - 1} onClick={() => handleGridClick(tileGrid.tiles.find(t => t.row === selectedPatch.row && t.col === selectedPatch.col + 1))}>Right</Button>
                   </div>
 
                   {/* AI Metadata Floating Panel */}
@@ -2604,7 +2597,7 @@ const Viewer = () => {
                       <h3 className="font-semibold text-primary">Selected Patch</h3>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/20" onClick={togglePatchFullscreen}><Expand className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleExitPatch}><X className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedPatch(null)}><X className="w-4 h-4" /></Button>
                       </div>
                     </div>
                     <div ref={patchContainerRef} className="aspect-square bg-black/10 rounded-lg overflow-hidden relative group">
@@ -2612,7 +2605,7 @@ const Viewer = () => {
                         <div className="flex items-center justify-center w-full h-full"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
                       ) : (
                         <>
-                          <motion.img key={sidebarKey} src={selectedPatch.url} alt="High Res Patch" className={`w-full h-full object-cover ${patchZoom > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`} drag={patchZoom > 1} dragConstraints={{ left: -150*(patchZoom-1), right: 150*(patchZoom-1), top: -150*(patchZoom-1), bottom: 150*(patchZoom-1) }} dragElastic={0.2} animate={{ scale: patchZoom }} transition={{ type: "spring", stiffness: 300, damping: 20 }} onError={(e) => { e.currentTarget.src = "https://placehold.co/400x400?text=No+Data"; }} />
+                          <motion.img key={sidebarKey} src={selectedPatch?.url} alt="High Res Patch" className={`w-full h-full object-cover ${patchZoom > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`} drag={patchZoom > 1} dragConstraints={{ left: -150*(patchZoom-1), right: 150*(patchZoom-1), top: -150*(patchZoom-1), bottom: 150*(patchZoom-1) }} dragElastic={0.2} animate={{ scale: patchZoom }} transition={{ type: "spring", stiffness: 300, damping: 20 }} onError={(e) => { e.currentTarget.src = "https://placehold.co/400x400?text=No+Data"; }} />
                           <div className="absolute bottom-2 right-2 flex gap-1 bg-black/50 backdrop-blur-md p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20" onClick={handlePatchZoomOut}><ZoomOut className="w-3 h-3" /></Button>
                             <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20" onClick={handlePatchZoomIn}><ZoomIn  className="w-3 h-3" /></Button>
