@@ -1798,18 +1798,40 @@ const WBC_COLORS = {
 };
 
 // ── AUTH HELPER ───────────────────────────────────────────────────────────────
+// const authFetch = (url: string, options: RequestInit = {}) => {
+//   const token = localStorage.getItem("auth_token");
+  
+//   // Safely cast existing headers to a standard object for TypeScript
+//   const existingHeaders = (options.headers as Record<string, string>) || {};
+  
+//   return fetch(url, {
+//     ...options,
+//     headers: {
+//       ...existingHeaders,
+//       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+//     },
+//   });
+// };
+
+// ── AUTH HELPER ───────────────────────────────────────────────────────────────
 const authFetch = (url: string, options: RequestInit = {}) => {
   const token = localStorage.getItem("auth_token");
-  
-  // Safely cast existing headers to a standard object for TypeScript
   const existingHeaders = (options.headers as Record<string, string>) || {};
-  
+
   return fetch(url, {
     ...options,
     headers: {
       ...existingHeaders,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
+  }).then((response) => {
+    if (response.status === 401) {
+      // Token expired or invalid — clear it and redirect to login
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
+      window.location.href = "/login";
+    }
+    return response;
   });
 };
 
